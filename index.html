@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rifa Corporation — Invoice Generator</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --maroon-950:#3a0a12;
+  --maroon-800:#5c0f1c;
+  --maroon-700:#7a1526;
+  --maroon-accent:#9c1f33;
+  --cream:#faf6f1;
+  --paper:#ffffff;
+  --ink-900:#221818;
+  --ink-600:#5a4d4d;
+  --ink-400:#8a7a7a;
+  --line:#e8ddd7;
+  --gold:#b8934a;
+  --ok:#2f7a4f;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family:'Georgia', 'Times New Roman', serif;
+  background:var(--cream);
+  color:var(--ink-900);
+  min-height:100vh;
+}
+.topbar{
+  background:linear-gradient(135deg, var(--maroon-950), var(--maroon-800));
+  color:#fff;
+  padding:20px 28px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  box-shadow:0 2px 12px rgba(58,10,18,0.25);
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:14px;
+}
+.brand img{
+  height:44px;
+  width:44px;
+  object-fit:contain;
+  border-radius:6px;
+  background:#fff;
+  padding:3px;
+}
+.brand-text h1{
+  font-size:19px;
+  margin:0;
+  letter-spacing:0.3px;
+  font-weight:700;
+}
+.brand-text p{
+  margin:2px 0 0;
+  font-size:11.5px;
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  color:#e8c9c9;
+  letter-spacing:0.4px;
+}
+.tabs{
+  display:flex;
+  gap:4px;
+}
+.tab-btn{
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.25);
+  color:#f0dede;
+  padding:9px 18px;
+  border-radius:7px;
+  cursor:pointer;
+  font-size:13.5px;
+  transition:all 0.15s ease;
+}
+.tab-btn:hover{ background:rgba(255,255,255,0.08); }
+.tab-btn.active{
+  background:#fff;
+  color:var(--maroon-800);
+  border-color:#fff;
+  font-weight:600;
+}
+.container{
+  max-width:1100px;
+  margin:0 auto;
+  padding:32px 24px 60px;
+}
+.view{ display:none; }
+.view.active{ display:block; }
+
+/* Card */
+.card{
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:28px;
+  margin-bottom:22px;
+  box-shadow:0 1px 3px rgba(58,10,18,0.05);
+}
+.card h2{
+  font-size:17px;
+  margin:0 0 18px;
+  color:var(--maroon-800);
+  font-weight:700;
+  border-bottom:2px solid var(--line);
+  padding-bottom:12px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+}
+.grid3{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:18px;
+}
+.field{ display:flex; flex-direction:column; gap:6px; }
+.field label{
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  font-size:12.5px;
+  color:var(--ink-600);
+  font-weight:600;
+}
+.field input, .field select{
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  padding:10px 12px;
+  border:1.5px solid var(--line);
+  border-radius:7px;
+  font-size:14.5px;
+  color:var(--ink-900);
+  background:#fff;
+  transition:border-color 0.15s;
+}
+.field input:focus, .field select:focus{
+  outline:none;
+  border-color:var(--maroon-accent);
+}
+.field input:disabled, .field select:disabled{
+  background:#f5f0ed;
+  color:var(--ink-400);
+}
+.readout{
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  background:#faf2ee;
+  border:1.5px dashed var(--gold);
+  border-radius:7px;
+  padding:10px 12px;
+  font-size:14.5px;
+  color:var(--maroon-800);
+  font-weight:700;
+}
+.btn{
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  background:var(--maroon-800);
+  color:#fff;
+  border:none;
+  padding:12px 22px;
+  border-radius:8px;
+  font-size:14.5px;
+  font-weight:600;
+  cursor:pointer;
+  transition:background 0.15s;
+}
+.btn:hover{ background:var(--maroon-950); }
+.btn:disabled{ background:#c9b8b8; cursor:not-allowed; }
+.btn-outline{
+  background:transparent;
+  color:var(--maroon-800);
+  border:1.5px solid var(--maroon-800);
+}
+.btn-outline:hover{ background:#faf0ee; }
+.btn-danger{
+  background:transparent;
+  color:#a83232;
+  border:1.5px solid #e0b8b8;
+  padding:6px 12px;
+  font-size:12.5px;
+}
+.btn-danger:hover{ background:#fdf0f0; }
+.btn-sm{ padding:7px 14px; font-size:13px; }
+.actions{ display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
+
+/* Admin lists */
+.admin-col{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; }
+.list-box{
+  border:1px solid var(--line);
+  border-radius:9px;
+  overflow:hidden;
+}
+.list-box .list-header{
+  background:#faf2ee;
+  padding:10px 14px;
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  font-size:12.5px;
+  font-weight:700;
+  color:var(--maroon-800);
+  border-bottom:1px solid var(--line);
+}
+.list-items{ max-height:340px; overflow-y:auto; }
+.list-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 14px;
+  border-bottom:1px solid #f0e8e4;
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  font-size:13.5px;
+  cursor:pointer;
+}
+.list-item:hover{ background:#faf6f4; }
+.list-item.selected{ background:#f5e6e2; font-weight:600; }
+.list-empty{
+  padding:20px 14px;
+  color:var(--ink-400);
+  font-size:13px;
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  text-align:center;
+}
+.add-row{
+  display:flex;
+  gap:8px;
+  padding:10px 14px;
+  border-top:1px solid var(--line);
+  background:#fcfaf8;
+}
+.add-row input{
+  flex:1;
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  padding:7px 10px;
+  border:1px solid var(--line);
+  border-radius:6px;
+  font-size:13px;
+}
+
+/* Invoice preview */
+#invoicePreviewWrap{
+  display:flex;
+  justify-content:center;
+  padding:20px 0;
+}
+.invoice-sheet{
+  width:760px;
+  background:#fff;
+  border:10px solid var(--maroon-800);
+  padding:44px;
+  font-family:'Helvetica Neue', Arial, sans-serif;
+}
+.inv-head{
+  display:flex;
+  align-items:flex-start;
+  gap:18px;
+  margin-bottom:22px;
+}
+.inv-head img{ width:64px; height:64px; object-fit:contain; }
+.inv-head h1{
+  font-size:26px;
+  color:var(--maroon-800);
+  margin:0 0 4px;
+  letter-spacing:0.5px;
+  font-weight:800;
+}
+.inv-head p{ margin:2px 0; font-size:12.5px; color:var(--ink-600); }
+.inv-title{
+  font-size:38px;
+  font-weight:800;
+  color:var(--ink-900);
+  margin:22px 0 6px;
+  letter-spacing:0.5px;
+}
+.inv-title-rule{
+  width:150px;
+  height:4px;
+  background:var(--maroon-800);
+  margin-bottom:26px;
+}
+.inv-meta{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:16px;
+  margin-bottom:22px;
+}
+.inv-meta div label{
+  display:block;
+  font-size:11px;
+  font-weight:700;
+  color:var(--maroon-800);
+  text-transform:uppercase;
+  letter-spacing:0.4px;
+  margin-bottom:4px;
+}
+.inv-meta div p{ margin:1px 0; font-size:13.5px; color:var(--ink-900); }
+table.inv-table{
+  width:100%;
+  border-collapse:collapse;
+  margin-bottom:20px;
+}
+table.inv-table thead th{
+  text-align:left;
+  font-size:11.5px;
+  color:var(--maroon-800);
+  text-transform:uppercase;
+  letter-spacing:0.3px;
+  border-bottom:2px solid var(--maroon-800);
+  padding:8px 6px;
+}
+table.inv-table tbody td{
+  padding:12px 6px;
+  font-size:13.5px;
+  border-bottom:1px solid var(--line);
+}
+.ta-r{ text-align:right; }
+.ta-c{ text-align:center; }
+.inv-total-row td{
+  font-weight:800;
+  font-size:15px;
+  color:var(--maroon-800);
+  border-top:2px solid var(--maroon-800);
+  border-bottom:none;
+}
+.inv-bottom{
+  display:grid;
+  grid-template-columns:1.3fr 1fr;
+  gap:24px;
+  margin-top:10px;
+}
+.pay-box{
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:16px;
+}
+.pay-box h3{
+  margin:0 0 10px;
+  font-size:12.5px;
+  color:var(--maroon-800);
+  text-transform:uppercase;
+  letter-spacing:0.4px;
+}
+.pay-methods{ display:flex; gap:16px; }
+.pay-method{ flex:1; }
+.pay-method .bank-name{ font-weight:700; font-size:13.5px; margin-bottom:2px; }
+.pay-method p{ margin:1px 0; font-size:12.5px; color:var(--ink-600); }
+.pay-method img{ width:100px; height:100px; object-fit:contain; margin-top:4px; }
+.dp-box{
+  text-align:right;
+  padding:16px;
+}
+.dp-box label{
+  display:block;
+  font-size:11.5px;
+  color:var(--maroon-800);
+  text-transform:uppercase;
+  letter-spacing:0.4px;
+  margin-bottom:6px;
+}
+.dp-box .amt{ font-size:26px; font-weight:800; color:var(--ink-900); }
+.sign-area{ margin-top:34px; font-size:13px; }
+.sign-area .sig-line{ margin:44px 0 4px; font-size:13px; }
+.sign-area .sig-name{ font-weight:700; font-size:13px; }
+
+.badge-status{
+  display:inline-block;
+  padding:3px 10px;
+  border-radius:20px;
+  font-size:11px;
+  font-weight:700;
+  font-family:'Helvetica Neue', Arial, sans-serif;
+}
+.badge-paid{ background:#e5f3ea; color:var(--ok); }
+.badge-dp{ background:#fdf3e0; color:#a67614; }
+
+/* History table */
+table.hist-table{
+  width:100%;
+  border-collapse:collapse;
+  font-family:'Helvetica Neue', Arial, sans-serif;
+}
+table.hist-table thead th{
+  text-align:left;
+  font-size:12px;
+  color:var(--maroon-800);
+  text-transform:uppercase;
+  letter-spacing:0.3px;
+  border-bottom:2px solid var(--line);
+  padding:10px 8px;
+}
+table.hist-table tbody td{
+  padding:11px 8px;
+  font-size:13.5px;
+  border-bottom:1px solid var(--line);
+}
+table.hist-table tbody tr:hover{ background:#faf6f4; cursor:pointer; }
+.search-bar{
+  display:flex;
+  gap:10px;
+  margin-bottom:18px;
+}
+.search-bar input{
+  flex:1;
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  padding:10px 14px;
+  border:1.5px solid var(--line);
+  border-radius:7px;
+  font-size:14px;
+}
+.toast{
+  position:fixed;
+  bottom:26px;
+  left:50%;
+  transform:translateX(-50%) translateY(20px);
+  background:var(--maroon-950);
+  color:#fff;
+  padding:13px 22px;
+  border-radius:8px;
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  font-size:13.5px;
+  box-shadow:0 6px 20px rgba(0,0,0,0.25);
+  opacity:0;
+  pointer-events:none;
+  transition:all 0.25s ease;
+  z-index:999;
+}
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+.toast.error{ background:#7a1e1e; }
+.empty-state{
+  text-align:center;
+  padding:50px 20px;
+  color:var(--ink-400);
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  font-size:14px;
+}
+.modal-overlay{
+  position:fixed; inset:0;
+  background:rgba(34,24,24,0.55);
+  display:none;
+  align-items:flex-start;
+  justify-content:center;
+  padding:40px 20px;
+  z-index:500;
+  overflow-y:auto;
+}
+.modal-overlay.show{ display:flex; }
+.modal-box{
+  background:#fff;
+  border-radius:12px;
+  max-width:820px;
+  width:100%;
+}
+.modal-close-bar{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  padding:14px 20px;
+  border-bottom:1px solid var(--line);
+  font-family:'Helvetica Neue', Arial, sans-serif;
+}
+.modal-body-pad{ padding:24px; }
+@media print{
+  .topbar, .no-print{ display:none !important; }
+  body{ background:#fff; }
+  .container{ padding:0; max-width:none; }
+  .invoice-sheet{ border-width:6px; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar no-print">
+  <div class="brand">
+    <img src="assets/logo-rifa.jpg" alt="logo">
+    <div class="brand-text">
+      <h1>Rifa Corporation</h1>
+      <p>INVOICE GENERATOR</p>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" data-view="createView">Buat Invoice</button>
+    <button class="tab-btn" data-view="historyView">Riwayat</button>
+    <button class="tab-btn" data-view="adminView">Kelola Kamar</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- CREATE INVOICE VIEW -->
+  <div id="createView" class="view active">
+    <div class="card">
+      <h2>Data Tamu &amp; Kamar</h2>
+      <div class="grid">
+        <div class="field">
+          <label>Nama Tamu</label>
+          <input type="text" id="guestName" placeholder="Contoh: Mrs. Merry">
+        </div>
+        <div class="field">
+          <label>Dormitory</label>
+          <select id="selDorm"><option value="">Pilih dormitory...</option></select>
+        </div>
+        <div class="field">
+          <label>Lantai</label>
+          <select id="selFloor">
+            <option value="">Pilih lantai...</option>
+            <option value="Lantai 1">Lantai 1</option>
+            <option value="Lantai 2">Lantai 2</option>
+            <option value="Lantai 3">Lantai 3</option>
+            <option value="Lantai 4">Lantai 4</option>
+            <option value="Lantai 5">Lantai 5</option>
+            <option value="Lantai 6">Lantai 6</option>
+            <option value="Lantai 7">Lantai 7</option>
+            <option value="Lantai 8">Lantai 8</option>
+            <option value="Lantai 9">Lantai 9</option>
+            <option value="Lantai 10">Lantai 10</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Nomor Kamar</label>
+          <input type="text" id="roomInput" placeholder="Contoh: 508">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Tanggal &amp; Tarif</h2>
+      <div class="grid3">
+        <div class="field">
+          <label>Check-In</label>
+          <input type="date" id="checkIn">
+        </div>
+        <div class="field">
+          <label>Check-Out</label>
+          <input type="date" id="checkOut">
+        </div>
+        <div class="field">
+          <label>Jumlah Malam</label>
+          <div class="readout" id="nightsOut">—</div>
+        </div>
+      </div>
+      <div class="grid3" style="margin-top:18px;">
+        <div class="field">
+          <label>Harga per Malam (Rp)</label>
+          <input type="number" id="pricePerNight" placeholder="Contoh: 175000">
+        </div>
+        <div class="field">
+          <label>Total</label>
+          <div class="readout" id="totalOut">Rp0</div>
+        </div>
+        <div class="field">
+          <label>DP / Uang Muka (Rp, opsional)</label>
+          <input type="number" id="downPayment" placeholder="0">
+        </div>
+      </div>
+      <div class="field" style="margin-top:18px;">
+        <label>Catatan (opsional)</label>
+        <input type="text" id="notes" placeholder="Catatan tambahan...">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="btnGenerate">Generate Invoice</button>
+      <button class="btn btn-outline" id="btnResetForm">Reset Form</button>
+    </div>
+  </div>
+
+  <!-- HISTORY VIEW -->
+  <div id="historyView" class="view">
+    <div class="card">
+      <h2>Riwayat Invoice</h2>
+      <div class="search-bar">
+        <input type="text" id="searchHist" placeholder="Cari nama tamu atau nomor invoice...">
+      </div>
+      <div id="histTableWrap">
+        <div class="empty-state">Memuat riwayat...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN VIEW -->
+  <div id="adminView" class="view">
+    <div class="card">
+      <h2>Kelola Dormitory</h2>
+      <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:var(--ink-600);margin-top:-8px;">
+        Lantai (1–10) dan nomor kamar diisi langsung saat membuat invoice, tidak perlu dikelola di sini.
+      </p>
+      <div class="list-box" style="max-width:420px;">
+        <div class="list-header">Dormitory</div>
+        <div class="list-items" id="listDorm"></div>
+        <div class="add-row">
+          <input type="text" id="newDormName" placeholder="Nama dormitory baru...">
+          <button class="btn btn-sm" id="btnAddDorm">Tambah</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- INVOICE MODAL -->
+<div class="modal-overlay" id="invoiceModal">
+  <div class="modal-box">
+    <div class="modal-close-bar no-print">
+      <button class="btn btn-outline btn-sm" id="btnPrintInvoice">Print</button>
+      <button class="btn btn-sm" id="btnDownloadPdf">Download PDF</button>
+      <button class="btn btn-outline btn-sm" id="btnCloseModal">Tutup</button>
+    </div>
+    <div class="modal-body-pad">
+      <div id="invoicePreviewWrap">
+        <div class="invoice-sheet" id="invoiceSheet"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
