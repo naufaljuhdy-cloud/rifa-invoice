@@ -250,7 +250,10 @@ document.getElementById('btnResetForm').addEventListener('click', ()=>{
 // ============================================
 // RENDER INVOICE SHEET (used for both new + reprint)
 // ============================================
+let currentRenderedInvoice = null;
+
 function renderInvoiceSheet(inv){
+  currentRenderedInvoice = inv;
   const sheet = document.getElementById('invoiceSheet');
   const dpAmount = Number(inv.down_payment) || 0;
   const total = Number(inv.total) || 0;
@@ -387,7 +390,10 @@ document.getElementById('btnDownloadPdf').addEventListener('click', async ()=>{
     const imgWidth = pageWidth - 20;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
-    pdf.save('invoice-rifa.pdf');
+    const guestName = (currentRenderedInvoice?.guest_name || 'Tamu').replace(/[\\/:*?"<>|]/g, '');
+    const invNum = (currentRenderedInvoice?.invoice_number || '').replace(/\//g, '-');
+    const filename = `Invoice ${invNum} - ${guestName} - Rifa Corporation.pdf`;
+    pdf.save(filename);
   }catch(e){
     toast('Gagal membuat PDF: ' + e.message, true);
   }finally{
