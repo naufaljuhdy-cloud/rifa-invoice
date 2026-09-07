@@ -254,10 +254,11 @@ function renderInvoiceSheet(inv){
   const sheet = document.getElementById('invoiceSheet');
   const dpAmount = Number(inv.down_payment) || 0;
   const total = Number(inv.total) || 0;
+  const remaining = Math.max(total - dpAmount, 0);
   const isPaid = dpAmount >= total && total > 0;
   const statusBadge = isPaid
     ? '<span class="badge-status badge-paid">LUNAS</span>'
-    : (dpAmount > 0 ? '<span class="badge-status badge-dp">DP DITERIMA</span>' : '');
+    : (dpAmount > 0 ? '<span class="badge-status badge-dp">DP DITERIMA</span>' : '<span class="badge-status badge-unpaid">BELUM BAYAR</span>');
 
   sheet.innerHTML = `
     <div class="inv-head">
@@ -349,6 +350,10 @@ function renderInvoiceSheet(inv){
         <label>DP / Terbayar</label>
         <div class="amt">${formatRupiah(dpAmount)}</div>
         <div style="margin-top:8px;">${statusBadge}</div>
+        ${!isPaid ? `<div style="margin-top:10px; font-family:'Helvetica Neue',Arial,sans-serif;">
+          <label style="display:block; font-size:11.5px; color:var(--maroon-800); text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px;">Sisa Pembayaran</label>
+          <div style="font-size:19px; font-weight:800; color:#a83232;">${formatRupiah(remaining)}</div>
+        </div>` : ''}
       </div>
     </div>
 
