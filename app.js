@@ -385,6 +385,10 @@ function renderHistoryTable(list){
       <td>${formatDateLong(inv.check_in)}</td>
       <td>${formatDateLong(inv.check_out)}</td>
       <td class="ta-r">${formatRupiah(inv.total)}</td>
+      <td class="ta-c no-print">
+        <button class="btn-outline btn-sm" data-action="edit" data-id="${inv.id}" style="margin-right:6px;">Edit</button>
+        <button class="btn-danger" data-action="delete" data-id="${inv.id}">Hapus</button>
+      </td>
     </tr>
   `).join('');
   wrap.innerHTML = `
@@ -397,13 +401,33 @@ function renderHistoryTable(list){
           <th>Check-In</th>
           <th>Check-Out</th>
           <th class="ta-r">Total</th>
+          <th class="no-print">Aksi</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
   `;
+  wrap.querySelectorAll('[data-action="edit"]').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const inv = invoices.find(i=>i.id === btn.dataset.id);
+      if(inv) openEditModal(inv);
+    });
+  });
+  wrap.querySelectorAll('[data-action="delete"]').forEach(btn=>{
+    btn.addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      const inv = invoices.find(i=>i.id === btn.dataset.id);
+      if(!confirm(`Hapus invoice ${inv?.invoice_number} atas nama ${inv?.guest_name}? Tindakan ini tidak bisa dibatalkan.`)) return;
+      const { error } = await sb.from('invoices').delete().eq('id', btn.dataset.id);
+      if(error){ toast('Gagal menghapus: ' + error.message, true); return; }
+      toast('Invoice dihapus');
+      loadHistory();
+    });
+  });
   wrap.querySelectorAll('tbody tr').forEach(tr=>{
-    tr.addEventListener('click', ()=>{
+    tr.addEventListener('click', (e)=>{
+      if(e.target.dataset.action) return;
       const inv = invoices.find(i=>i.id === tr.dataset.id);
       if(inv){
         renderInvoiceSheet(inv);
@@ -461,6 +485,88 @@ document.getElementById('btnAddDorm').addEventListener('click', async ()=>{
   await loadMasterData();
   renderAdminDorms();
   toast('Dormitory ditambahkan');
+});
+
+// ============================================
+// EDIT INVOICE MODAL
+// ============================================
+let editingInvoiceId = null;
+
+function openEditModal(inv){
+  editingInvoiceId = inv.id;
+  document.getElementById('editGuestName').value = inv.guest_name;
+  document.getElementById('editDormName').value = inv.dormitory_name;
+  document.getElementById('editFloorName').value = inv.floor_name;
+  document.getElementById('editRoomNumber').value = inv.room_number;
+  document.getElementById('editCheckIn').value = inv.check_in;
+  document.getElementById('editCheckOut').value = inv.check_out;
+  document.getElementById('editPrice').value = inv.price_per_night;
+  document.getElementById('editDp').value = inv.down_payment || 0;
+  document.getElementById('editNotes').value = inv.notes || '';
+  recalcEdit();
+  document.getElementById('editModal').classList.add('show');
+}
+
+function recalcEdit(){
+  const nights = nightsBetween(document.getElementById('editCheckIn').value, document.getElementById('editCheckOut').value);
+  document.getElementById('editNightsOut').textContent = nights > 0 ? (nights + " malam") : "—";
+  const price = Number(document.getElementById('editPrice').value) || 0;
+  document.getElementById('editTotalOut').textContent = formatRupiah(nights * price);
+}
+document.getElementById('editCheckIn').addEventListener('change', recalcEdit);
+document.getElementById('editCheckOut').addEventListener('change', recalcEdit);
+document.getElementById('editPrice').addEventListener('input', recalcEdit);
+
+document.getElementById('btnCloseEditModal').addEventListener('click', ()=>{
+  document.getElementById('editModal').classList.remove('show');
+  editingInvoiceId = null;
+});
+
+document.getElementById('btnSaveEdit').addEventListener('click', async ()=>{
+  if(!editingInvoiceId) return;
+  const guestName = document.getElementById('editGuestName').value.trim();
+  const dormName = document.getElementById('editDormName').value.trim();
+  const floorName = document.getElementById('editFloorName').value.trim();
+  const roomNumber = document.getElementById('editRoomNumber').value.trim();
+  const checkIn = document.getElementById('editCheckIn').value;
+  const checkOut = document.getElementById('editCheckOut').value;
+  const price = Number(document.getElementById('editPrice').value) || 0;
+  const dp = Number(document.getElementById('editDp').value) || 0;
+  const notes = document.getElementById('editNotes').value.trim();
+
+  if(!guestName || !dormName || !floorName || !roomNumber){ toast('Semua data wajib diisi', true); return; }
+  const nights = nightsBetween(checkIn, checkOut);
+  if(nights <= 0){ toast('Check-out harus setelah check-in', true); return; }
+  if(price <= 0){ toast('Isi harga per malam', true); return; }
+
+  const btn = document.getElementById('btnSaveEdit');
+  btn.disabled = true;
+  btn.textContent = 'Menyimpan...';
+
+  const total = nights * price;
+  const { error } = await sb.from('invoices').update({
+    guest_name: guestName,
+    dormitory_name: dormName,
+    floor_name: floorName,
+    room_number: roomNumber,
+    check_in: checkIn,
+    check_out: checkOut,
+    nights: nights,
+    price_per_night: price,
+    total: total,
+    down_payment: dp,
+    notes: notes
+  }).eq('id', editingInvoiceId);
+
+  btn.disabled = false;
+  btn.textContent = 'Simpan Perubahan';
+
+  if(error){ toast('Gagal menyimpan: ' + error.message, true); return; }
+
+  toast('Invoice berhasil diupdate');
+  document.getElementById('editModal').classList.remove('show');
+  editingInvoiceId = null;
+  loadHistory();
 });
 
 // ============================================
