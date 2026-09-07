@@ -188,6 +188,33 @@ body{
 .btn-sm{ padding:7px 14px; font-size:13px; }
 .actions{ display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
 
+.extra-item-row{
+  display:grid;
+  grid-template-columns:1fr 160px 40px;
+  gap:10px;
+  margin-bottom:10px;
+  align-items:center;
+}
+.extra-item-row input{
+  font-family:'Helvetica Neue', Arial, sans-serif;
+  padding:9px 12px;
+  border:1.5px solid var(--line);
+  border-radius:7px;
+  font-size:13.5px;
+}
+.extra-item-remove{
+  background:transparent;
+  border:1.5px solid #e0b8b8;
+  color:#a83232;
+  border-radius:7px;
+  width:38px;
+  height:38px;
+  cursor:pointer;
+  font-size:16px;
+  line-height:1;
+}
+.extra-item-remove:hover{ background:#fdf0f0; }
+
 /* Admin lists */
 .admin-col{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; }
 .list-box{
@@ -559,6 +586,15 @@ table.hist-table tbody tr:hover{ background:#faf6f4; cursor:pointer; }
         <label>Catatan (opsional)</label>
         <input type="text" id="notes" placeholder="Catatan tambahan...">
       </div>
+    </div>
+
+    <div class="card">
+      <h2>Biaya Tambahan (opsional)</h2>
+      <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:var(--ink-600);margin-top:-10px;">
+        Contoh: Breakfast, Extra Bed, Laundry, dll — di luar biaya kamar per malam.
+      </p>
+      <div id="extraItemsList"></div>
+      <button class="btn btn-outline btn-sm" id="btnAddExtraItem" style="margin-top:10px;">+ Tambah Item</button>
     </div>
 
     <div class="actions">

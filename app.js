@@ -12,6 +12,7 @@ const ROMAN_MONTHS = ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","X
 // ============================================
 let dormitories = [];
 let invoices = [];
+let extraItems = []; // [{description, price}]
 
 // ============================================
 // UTIL
@@ -99,12 +100,48 @@ function recalc(){
   const nights = nightsBetween(checkInEl.value, checkOutEl.value);
   nightsOut.textContent = nights > 0 ? (nights + " malam") : "—";
   const price = Number(priceEl.value) || 0;
-  const total = nights * price;
-  totalOut.textContent = formatRupiah(total);
+  const roomTotal = nights * price;
+  const extrasTotal = extraItems.reduce((sum, it) => sum + (Number(it.price) || 0), 0);
+  totalOut.textContent = formatRupiah(roomTotal + extrasTotal);
 }
 checkInEl.addEventListener('change', recalc);
 checkOutEl.addEventListener('change', recalc);
 priceEl.addEventListener('input', recalc);
+
+// ============================================
+// EXTRA ITEMS (biaya tambahan: breakfast, extra bed, dll)
+// ============================================
+function renderExtraItems(){
+  const wrap = document.getElementById('extraItemsList');
+  wrap.innerHTML = extraItems.map((item, idx) => `
+    <div class="extra-item-row">
+      <input type="text" placeholder="Contoh: Breakfast" value="${item.description}" data-idx="${idx}" data-field="description">
+      <input type="number" placeholder="Harga (Rp)" value="${item.price || ''}" data-idx="${idx}" data-field="price">
+      <button class="extra-item-remove" data-idx="${idx}" title="Hapus item">×</button>
+    </div>
+  `).join('');
+
+  wrap.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input', ()=>{
+      const idx = Number(inp.dataset.idx);
+      const field = inp.dataset.field;
+      extraItems[idx][field] = field === 'price' ? Number(inp.value) || 0 : inp.value;
+      recalc();
+    });
+  });
+  wrap.querySelectorAll('.extra-item-remove').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      extraItems.splice(Number(btn.dataset.idx), 1);
+      renderExtraItems();
+      recalc();
+    });
+  });
+}
+
+document.getElementById('btnAddExtraItem').addEventListener('click', ()=>{
+  extraItems.push({ description: '', price: 0 });
+  renderExtraItems();
+});
 
 // ============================================
 // INVOICE NUMBER GENERATION (monthly reset)
@@ -160,7 +197,9 @@ document.getElementById('btnGenerate').addEventListener('click', async ()=>{
 
   try{
     const dormName = dormitories.find(d=>d.id===dormId)?.name || '';
-    const total = nights * price;
+    const validExtras = extraItems.filter(it => it.description.trim() !== '' && Number(it.price) > 0);
+    const extrasTotal = validExtras.reduce((sum, it) => sum + Number(it.price), 0);
+    const total = (nights * price) + extrasTotal;
 
     const invoiceNumber = await getNextInvoiceNumber(checkIn);
 
@@ -176,7 +215,8 @@ document.getElementById('btnGenerate').addEventListener('click', async ()=>{
       price_per_night: price,
       total: total,
       down_payment: dp,
-      notes: notes
+      notes: notes,
+      extra_items: validExtras
     }).select().single();
 
     if(insertErr){ throw new Error(insertErr.message); }
@@ -202,6 +242,8 @@ document.getElementById('btnResetForm').addEventListener('click', ()=>{
   priceEl.value = '';
   document.getElementById('downPayment').value = '';
   document.getElementById('notes').value = '';
+  extraItems = [];
+  renderExtraItems();
   recalc();
 });
 
@@ -270,8 +312,15 @@ function renderInvoiceSheet(inv){
           <td>Penginapan Harian</td>
           <td class="ta-c">1 Kamar x ${inv.nights} Malam</td>
           <td class="ta-r">${formatRupiah(inv.price_per_night)}</td>
-          <td class="ta-r">${formatRupiah(total)}</td>
+          <td class="ta-r">${formatRupiah(inv.nights * inv.price_per_night)}</td>
         </tr>
+        ${(inv.extra_items || []).map(item => `
+        <tr>
+          <td>${item.description}</td>
+          <td class="ta-c">—</td>
+          <td class="ta-r">—</td>
+          <td class="ta-r">${formatRupiah(item.price)}</td>
+        </tr>`).join('')}
         <tr class="inv-total-row">
           <td colspan="3" class="ta-r">TOTAL</td>
           <td class="ta-r">${formatRupiah(total)}</td>
