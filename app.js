@@ -319,8 +319,8 @@ function renderInvoiceSheet(inv){
 
     <div class="sign-area">
       <p>Best Regards,<br>Owner CV. Rifa Corporation</p>
-      <div class="sig-line"></div>
-      <div class="sig-name">Hj. Ai Mardhiyah, SKp.,Mkes, Ph.D</div>
+      <img src="signature-ai-mardhiyah.png" alt="Tanda tangan" style="height:60px; margin-top:20px; display:block;">
+      <div class="sig-name" style="margin-top:6px;">Hj. Ai Mardhiyah, SKp.,Mkes, Ph.D</div>
     </div>
   `;
 }
