@@ -113,36 +113,22 @@ async function getNextInvoiceNumber(dateForInvoice){
   const d = new Date(dateForInvoice + "T00:00:00");
   const year = d.getFullYear();
   const month = d.getMonth() + 1; // 1-12
-
-  // Try to fetch existing counter
-  const { data: existing, error: fetchErr } = await sb
-    .from('invoice_counters')
-    .select('*')
-    .eq('year', year)
-    .eq('month', month)
-    .maybeSingle();
-
-  if(fetchErr){ throw new Error('Gagal cek nomor invoice: ' + fetchErr.message); }
-
-  let nextNumber;
-  if(existing){
-    nextNumber = existing.last_number + 1;
-    const { error: updateErr } = await sb
-      .from('invoice_counters')
-      .update({ last_number: nextNumber })
-      .eq('id', existing.id);
-    if(updateErr){ throw new Error('Gagal update nomor invoice: ' + updateErr.message); }
-  } else {
-    nextNumber = 1;
-    const { error: insertErr } = await sb
-      .from('invoice_counters')
-      .insert({ year, month, last_number: nextNumber });
-    if(insertErr){ throw new Error('Gagal buat nomor invoice: ' + insertErr.message); }
-  }
-
-  const numStr = String(nextNumber).padStart(3, '0');
   const roman = ROMAN_MONTHS[month - 1];
-  return `${numStr}/RC-P/${roman}/${year}`;
+  const suffix = `RC-P/${roman}/${year}`;
+
+  // Hitung invoice yang MASIH ADA (belum dihapus) untuk bulan & tahun ini.
+  // Dengan begini, kalau invoice dihapus, nomor berikutnya otomatis
+  // menyesuaikan turun — bukan angka yang terus naik permanen.
+  const { count, error } = await sb
+    .from('invoices')
+    .select('*', { count: 'exact', head: true })
+    .like('invoice_number', `%/${suffix}`);
+
+  if(error){ throw new Error('Gagal cek nomor invoice: ' + error.message); }
+
+  const nextNumber = (count || 0) + 1;
+  const numStr = String(nextNumber).padStart(3, '0');
+  return `${numStr}/${suffix}`;
 }
 
 // ============================================
