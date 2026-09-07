@@ -233,7 +233,7 @@ function renderInvoiceSheet(inv){
 
   sheet.innerHTML = `
     <div class="inv-head">
-      <img src="assets/logo-rifa.jpg" alt="logo">
+      <img src="logo-rifa.jpg" alt="logo">
       <div>
         <h1>RIFA CORPORATION</h1>
         <p>Jalan Muhammad No.8, Pamoyanan, Cicendo, Kota Bandung</p>
@@ -306,7 +306,7 @@ function renderInvoiceSheet(inv){
           </div>
           <div class="pay-method">
             <p class="bank-name">QRIS</p>
-            <img src="assets/qris-rifa.jpeg" alt="QRIS">
+            <img src="qris-rifa.jpeg" alt="QRIS">
           </div>
         </div>
       </div>
