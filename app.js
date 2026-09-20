@@ -173,6 +173,7 @@ async function getNextInvoiceNumber(dateForInvoice){
 // ============================================
 document.getElementById('btnGenerate').addEventListener('click', async ()=>{
   const guestName = document.getElementById('guestName').value.trim();
+  const guestPhone = document.getElementById('guestPhone').value.trim();
   const dormId = selDorm.value;
   const floorName = selFloor.value;
   const roomNumber = roomInput.value.trim();
@@ -206,6 +207,7 @@ document.getElementById('btnGenerate').addEventListener('click', async ()=>{
     const { data: inserted, error: insertErr } = await sb.from('invoices').insert({
       invoice_number: invoiceNumber,
       guest_name: guestName,
+      guest_phone: guestPhone,
       dormitory_name: dormName,
       floor_name: floorName,
       room_number: roomNumber,
@@ -234,6 +236,7 @@ document.getElementById('btnGenerate').addEventListener('click', async ()=>{
 
 document.getElementById('btnResetForm').addEventListener('click', ()=>{
   document.getElementById('guestName').value = '';
+  document.getElementById('guestPhone').value = '';
   selDorm.value = '';
   selFloor.value = '';
   roomInput.value = '';
@@ -291,6 +294,7 @@ function renderInvoiceSheet(inv){
       <div>
         <label>Invoice untuk</label>
         <p>${inv.guest_name}</p>
+        ${inv.guest_phone ? `<p style="color:var(--ink-600); font-size:12px;">${inv.guest_phone}</p>` : ''}
       </div>
       <div>
         <label>Kamar</label>
@@ -339,9 +343,9 @@ function renderInvoiceSheet(inv){
         <h3>Pembayaran dapat dilakukan melalui:</h3>
         <div class="pay-methods">
           <div class="pay-method">
-            <p class="bank-name">Bank BNI</p>
-            <p>an. Ai Mardhiyah</p>
-            <p>0725520787</p>
+            <p class="bank-name">Bank Mandiri</p>
+            <p>an. Rifa Corporation</p>
+            <p>1300021243830</p>
           </div>
           <div class="pay-method">
             <p class="bank-name">QRIS</p>
@@ -541,6 +545,7 @@ let editingInvoiceId = null;
 function openEditModal(inv){
   editingInvoiceId = inv.id;
   document.getElementById('editGuestName').value = inv.guest_name;
+  document.getElementById('editGuestPhone').value = inv.guest_phone || '';
   document.getElementById('editDormName').value = inv.dormitory_name;
   document.getElementById('editFloorName').value = inv.floor_name;
   document.getElementById('editRoomNumber').value = inv.room_number;
@@ -571,6 +576,7 @@ document.getElementById('btnCloseEditModal').addEventListener('click', ()=>{
 document.getElementById('btnSaveEdit').addEventListener('click', async ()=>{
   if(!editingInvoiceId) return;
   const guestName = document.getElementById('editGuestName').value.trim();
+  const guestPhone = document.getElementById('editGuestPhone').value.trim();
   const dormName = document.getElementById('editDormName').value.trim();
   const floorName = document.getElementById('editFloorName').value.trim();
   const roomNumber = document.getElementById('editRoomNumber').value.trim();
@@ -592,6 +598,7 @@ document.getElementById('btnSaveEdit').addEventListener('click', async ()=>{
   const total = nights * price;
   const { error } = await sb.from('invoices').update({
     guest_name: guestName,
+    guest_phone: guestPhone,
     dormitory_name: dormName,
     floor_name: floorName,
     room_number: roomNumber,
